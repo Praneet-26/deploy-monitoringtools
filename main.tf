@@ -16,3 +16,13 @@ module "aws_vpc" {
     public_subnet = local.public_subnet
     IG_tags = var.igw_tags
 }
+
+
+module "aws_instance" {
+  source = "./modules/ec2"
+  ami_id = local.ami_id
+  instance_type = local.instance_type
+  key_name = local.key_name
+  public_subnet = module.aws_vpc.public_subnets
+  vpc_id = module.aws_vpc.vpc_id
+}

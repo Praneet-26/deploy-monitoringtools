@@ -1,0 +1,42 @@
+---
+- hosts: nodes
+  become: yes
+  vars:
+    dynatrace_api_url: "https://<your-environment-id>.live.dynatrace.com/api/v2/apiTokens"
+    personal_access_token: "YOUR_PERSONAL_ACCESS_TOKEN"
+
+  tasks:
+    - name: Generate Dynatrace Installer API Token
+      uri:
+        url: "{{ dynatrace_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Api-Token {{ personal_access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "OneAgentInstallerToken"
+          scopes:
+            - InstallerDownload
+        return_content: yes
+      register: dynatrace_token_response
+
+    - name: Save the generated API token to a variable
+      set_fact:
+        dynatrace_token: "{{ dynatrace_token_response.json.token }}"
+
+    - name: Download Dynatrace OneAgent installer
+      shell: |
+        curl -o /tmp/Dynatrace-OneAgent.sh \
+        'https://<your-environment-id>.live.dynatrace.com/api/v1/deployment/installer/agent/unix/default/latest?Api-Token={{ dynatrace_token }}&arch=x86&flavor=default'
+      args:
+        creates: /tmp/Dynatrace-OneAgent.sh
+
+    - name: Install Dynatrace OneAgent
+      shell: sh /tmp/Dynatrace-OneAgent.sh APP_LOG_CONTENT_ACCESS=1
+
+    - name: Start and enable Dynatrace OneAgent service
+      systemd:
+        name: oneagent
+        enabled: yes
+        state: started

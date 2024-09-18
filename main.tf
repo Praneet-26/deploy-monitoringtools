@@ -17,7 +17,6 @@ module "aws_vpc" {
     IG_tags = var.igw_tags
 }
 
-
 module "aws_instance" {
   source = "./modules/ec2"
   ami_id = local.ami_id
